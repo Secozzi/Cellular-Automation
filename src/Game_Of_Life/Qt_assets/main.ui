@@ -52,7 +52,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="grid_width_slider_2">
+         <widget class="QSpinBox" name="grid_width_spinbox">
           <property name="statusTip">
            <string>Width of game</string>
           </property>
@@ -74,6 +74,9 @@
           </property>
           <property name="whatsThis">
            <string>Width of game</string>
+          </property>
+          <property name="minimum">
+           <number>1</number>
           </property>
           <property name="maximum">
            <number>200</number>
@@ -124,6 +127,9 @@
           <property name="whatsThis">
            <string>Height of game</string>
           </property>
+          <property name="minimum">
+           <number>1</number>
+          </property>
           <property name="maximum">
            <number>200</number>
           </property>
@@ -172,6 +178,9 @@
           <property name="whatsThis">
            <string>Number of generations per second</string>
           </property>
+          <property name="minimum">
+           <number>1</number>
+          </property>
           <property name="maximum">
            <number>999</number>
           </property>
@@ -179,6 +188,9 @@
         </item>
         <item>
          <widget class="QSlider" name="speed_slider">
+          <property name="minimum">
+           <number>1</number>
+          </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -292,8 +304,8 @@
      <y>300</y>
     </hint>
     <hint type="destinationlabel">
-     <x>471</x>
-     <y>300</y>
+     <x>109</x>
+     <y>309</y>
     </hint>
    </hints>
   </connection>
@@ -308,15 +320,15 @@
      <y>276</y>
     </hint>
     <hint type="destinationlabel">
-     <x>452</x>
-     <y>275</y>
+     <x>106</x>
+     <y>279</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>grid_width_slider</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>grid_width_slider_2</receiver>
+   <receiver>grid_width_spinbox</receiver>
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -324,8 +336,8 @@
      <y>239</y>
     </hint>
     <hint type="destinationlabel">
-     <x>455</x>
-     <y>238</y>
+     <x>107</x>
+     <y>249</y>
     </hint>
    </hints>
   </connection>
