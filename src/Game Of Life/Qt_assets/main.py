@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtCore import pyqtSlot, QTimer
+from PyQt5.QtCore import QTimer, QThreadPool
 from PyQt5 import uic
+from worker import GoL_Worker
 
 import random
 import numpy as np
@@ -19,11 +20,18 @@ class GameOfLife(QMainWindow):
 
         self.grid_width = 200
         self.grid_height = 200
-        self.speed = 10
+        self.speed = 1
 
         self.timer = QTimer()
 
         self.init_ui()
+
+    def stop_thread(self):
+        pass
+
+    def start_thread(self):
+        self.threadpool = QThreadPool()
+
 
     def init_ui(self):
         uic.loadUi(Path("Qt_assets/main.ui"), self)
@@ -61,22 +69,29 @@ class GameOfLife(QMainWindow):
         self.timer.setInterval(1000 / self.speed)
 
     def next_iteration(self):
-        self.graph_grid()
+        self.call_worker()
+
 
     def set_board(self):
         self.board = np.random.randint(2, size=(self.grid_height, self.grid_width))
-        self.graph_grid()
+        print(type(self.board))
 
         self.show()
 
         self.timer.setInterval(1000 / self.speed)
-        self.timer.timeout.connect(self.graph_grid)
+        self.timer.timeout.connect(self.call_worker)
         self.timer.start()
 
-    def graph_grid(self):
-        self.board = np.random.randint(2, size=(self.grid_height, self.grid_width))
+    def call_worker(self):
+        self.worker = GoL_Worker(self.board, self.grid_height, self.grid_width)
+        self.worker.signals.output.connect(self.graph_grid)
+        self.worker.signals.finished.connect(self.stop_thread)
+
+        self.threadpool.start(self.worker)
+
+    def graph_grid(self, input_array):
         self.mplWidget.axes.cla()  # Clear the canvas.
-        self.mplWidget.axes.imshow(self.board)
+        self.mplWidget.axes.imshow(input_array)
         # Trigger the canvas to update and redraw.
         self.mplWidget.draw()
 
@@ -84,6 +99,7 @@ def launch_app():
     import sys
     app = QApplication(sys.argv)
     gol = GameOfLife()
+    gol.start_thread()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
