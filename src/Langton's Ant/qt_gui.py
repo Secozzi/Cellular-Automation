@@ -1,139 +1,71 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QMenu
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QColor, QIcon, QKeySequence
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtGui import QPainter, QPixmap, QPainterPath
+from PyQt5.QtCore import QObject, QPointF, QPropertyAnimation, pyqtProperty, Qt
+import sys
 
 
-class Settings:
-    WIDTH = 20
-    HEIGHT = 15
-    NUM_BLOCKS_X = 10
-    NUM_BLOCKS_Y = 14
+class Ball(QLabel):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        pix = QPixmap("ball.png")
+        pix = pix.scaled(10, 10, Qt.KeepAspectRatio)
+        self.h = pix.height()
+        self.w = pix.width()
+
+        self.setPixmap(pix)
+
+    def _set_pos(self, pos):
+        self.move(pos.x() - self.w / 2, pos.y() - self.h / 2)
+
+    pos = pyqtProperty(QPointF, fset=_set_pos)
 
 
-def create_action(parent, text, slot=None,
-                  shortcut=None, shortcuts=None, shortcut_context=None,
-                  icon=None, tooltip=None,
-                  checkable=False, checked=False):
-    action = QtWidgets.QAction(text, parent)
+class Example(QWidget):
 
-    if icon is not None:
-        action.setIcon(QIcon(':/%s.png' % icon))
-    if shortcut is not None:
-        action.setShortcut(shortcut)
-    if shortcuts is not None:
-        action.setShortcuts(shortcuts)
-    if shortcut_context is not None:
-        action.setShortcutContext(shortcut_context)
-    if tooltip is not None:
-        action.setToolTip(tooltip)
-        action.setStatusTip(tooltip)
-    if checkable:
-        action.setCheckable(True)
-    if checked:
-        action.setChecked(True)
-    if slot is not None:
-        action.triggered.connect(slot)
+    def __init__(self):
+        super().__init__()
 
-    return action
+        self.initView()
+        self.initAnimation()
 
+    def initView(self):
+        self.path = QPainterPath()
+        self.path.moveTo(30, 30)
+        self.path.cubicTo(30, 30, 200, 350, 350, 30)
 
-class QS(QtWidgets.QGraphicsScene):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.ball = Ball(self)
 
-        self.lines = []
+        self.ball.pos = QPointF(30, 30)
 
-        self.draw_grid()
-        self.set_opacity(0.3)
-        #self.set_visible(False)
-        #self.delete_grid()
+        self.setWindowTitle("Animation along curve")
+        self.setGeometry(300, 300, 400, 300)
+        self.show()
 
-    def draw_grid(self):
-        width = Settings.NUM_BLOCKS_X * Settings.WIDTH
-        height = Settings.NUM_BLOCKS_Y * Settings.HEIGHT
-        self.setSceneRect(0, 0, width, height)
-        self.setItemIndexMethod(QtWidgets.QGraphicsScene.NoIndex)
+    def paintEvent(self, e):
+        qp = QPainter()
+        qp.begin(self)
+        qp.setRenderHint(QPainter.Antialiasing)
+        qp.drawPath(self.path)
+        qp.end()
 
-        pen = QPen(QColor(255,0,100), 1, Qt.SolidLine)
+    def initAnimation(self):
+        self.anim = QPropertyAnimation(self.ball, b'pos')
+        self.anim.setDuration(7000)
 
-        for x in range(0,Settings.NUM_BLOCKS_X+1):
-            xc = x * Settings.WIDTH
-            self.lines.append(self.addLine(xc,0,xc,height,pen))
+        self.anim.setStartValue(QPointF(30, 30))
 
-        for y in range(0,Settings.NUM_BLOCKS_Y+1):
-            yc = y * Settings.HEIGHT
-            self.lines.append(self.addLine(0,yc,width,yc,pen))
+        vals = [p / 100 for p in range(0, 101)]
 
-    def set_visible(self,visible=True):
-        for line in self.lines:
-            line.setVisible(visible)
+        for i in vals:
+            self.anim.setKeyValueAt(i, self.path.pointAtPercent(i))
 
-    def delete_grid(self):
-        for line in self.lines:
-            self.removeItem(line)
-        del self.lines[:]
-
-    def set_opacity(self,opacity):
-        for line in self.lines:
-            line.setOpacity(opacity)
-
-class QV(QtWidgets.QGraphicsView):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.view_menu = QMenu(self)
-        self.create_actions()
-
-    def create_actions(self):
-        act = create_action(self.view_menu, "Zoom in",
-                            slot=self.on_zoom_in,
-                            shortcut=QKeySequence("+"), shortcut_context=Qt.WidgetShortcut)
-        self.view_menu.addAction(act)
-
-        act = create_action(self.view_menu, "Zoom out",
-                            slot=self.on_zoom_out,
-                            shortcut=QKeySequence("-"), shortcut_context=Qt.WidgetShortcut)
-        self.view_menu.addAction(act)
-        self.addActions(self.view_menu.actions())
-
-    def on_zoom_in(self):
-        if not self.scene():
-            return
-
-        self.scale(1.5, 1.5)
-
-    def on_zoom_out(self):
-        if not self.scene():
-            return
-
-        self.scale(1.0 / 1.5, 1.0 / 1.5)
-
-    def drawBackground(self, painter, rect):
-        gr = rect.toRect()
-        start_x = gr.left() + Settings.WIDTH - (gr.left() % Settings.WIDTH)
-        start_y = gr.top() + Settings.HEIGHT - (gr.top() % Settings.HEIGHT)
-        painter.save()
-        painter.setPen(QColor(60, 70, 80).lighter(90))
-        painter.setOpacity(0.7)
-
-        for x in range(start_x, gr.right(), Settings.WIDTH):
-            painter.drawLine(x, gr.top(), x, gr.bottom())
-
-        for y in range(start_y, gr.bottom(), Settings.HEIGHT):
-            painter.drawLine(gr.left(), y, gr.right(), y)
-
-        painter.restore()
-
-        super().drawBackground(painter, rect)
+        self.anim.setEndValue(QPointF(350, 30))
+        self.anim.start()
 
 
 if __name__ == '__main__':
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    a = QS()
-    win = QV()
-    win.setScene(a)
-    win.show()
+    app = QApplication(sys.argv)
+    ex = Example()
     sys.exit(app.exec_())
