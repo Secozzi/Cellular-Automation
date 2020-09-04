@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QBasicTimer
 from PyQt5.QtGui import QPen, QColor, QBrush
 import time
 
@@ -15,6 +15,9 @@ class Settings:
 
 
 class AppScene(QGraphicsScene):
+
+    SPEED = 50
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -23,19 +26,33 @@ class AppScene(QGraphicsScene):
 
         self.draw_grid()
         self.set_opacity(0.7)
+        self.ant_x = 50
 
-        self.addItem(self.ant)
+        self.timer = QBasicTimer()
+
         #print(self.itemAt(Settings.NUM_BLOCKS_X // 2, Settings.NUM_BLOCKS_Y // 2, QTransform()))
         #time.sleep(1)
-        #self.move_ant(Settings.BLOCK_HEIGHT, 0)
+        #self.move_ant(Settings.BLOCK_HEIGHT*9, 0)
+        self.start()
+
+    def start(self):
+        self.addItem(self.ant)
+        self.timer.start(self.SPEED, self)
+
+    def timerEvent(self, event):
+        if event.timerId() == self.timer.timerId():
+            self.set_ant(self.ant_x % 500 - 250, -40)
+            self.ant_x += 10
 
     def move_ant(self, dx, dy):
         self.ant.moveBy(dx, dy)
 
+    def set_ant(self, x, y):
+        self.ant.setPos(x, y)
+
     def create_ant(self):
         self.ant = QGraphicsEllipseItem(Settings.SCREEN_WIDTH // 2, Settings.SCREEN_HEIGHT // 2, Settings.BLOCK_WIDTH, Settings.BLOCK_HEIGHT)
         self.ant.setBrush(QBrush(QColor(0, 0, 255), Qt.SolidPattern))
-        print("Ant created")
 
     def draw_grid(self):
         width = Settings.SCREEN_WIDTH
@@ -76,7 +93,6 @@ class AppScene(QGraphicsScene):
 class Appview(QGraphicsView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.setFixedSize(Settings.SCREEN_WIDTH + 10, Settings.SCREEN_HEIGHT + 10)
 
     def drawBackground(self, painter, rect):
